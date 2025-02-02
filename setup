@@ -15,25 +15,118 @@
 # sudo install lazygit /usr/local/bin
 
 # Start clean state
+rm -rf ~/.local/bin
+rm -rf ~/.local/share/fonts
+rm -rf ~/.config/alacritty
 rm -rf ~/.config/nvim
 rm -rf ~/.config/tmux
 rm -rf ~/.local/share/nvim
 rm -rf ~/.local/state/nvim
 rm -rf ~/.cache/nvim
 rm -rf ~/.tmux
+rm -rf ~/.bashrc.d
+
+mkdir ~/.local/bin
 
 # Ubuntu
-sudo apt install git
-sudo apt install stow
+sudo apt install -y git
+sudo apt install -y stow
+sudo apt install -y curl
+sudo apt install -y unzip
+sudo apt install -y gnome-tweaks # To map Caps to Esc
+
+# For Python-based LSPs
+sudo apt install -y python3
+sudo apt install -y python3-pip
+
+# For Javascript-based LSPs
+sudo apt install -y nodejs
+sudo apt install -y npm
+
+# For Go-based LSPs
+sudo apt install -y golang-go
+
+# For Ruby-based Tools
+sudo apt install -y ruby
+
+# For C/C++ LSPs and formatters
+sudo apt install -y cmake
+sudo apt install -y clang
+sudo apt install -y clangd
+
 # For neovim
-sudo apt install ripgrep
-sudo apt install fd-find
-sudo apt install luarocks
-sudo apt install tree-sitter-cli
+sudo apt install -y fzf
+sudo apt install -y ripgrep
+sudo apt install -y fd-find
+sudo apt install -y luarocks
+sudo apt install -y tree-sitter-cli
 ln -s $(which fdfind) ~/.local/bin/fd
 
 # Install fonts
 stow fonts
 fc-cache -fv
 
+# Install alacritty
+sudo apt install -y alacritty
+stow alacritty
+
+# Install gnome-terminal
+#sudo apt install -y gnome-terminal
+#stow gnome-terminal
+
+# Install kitty
+#sudo apt install -y kitty
+#stow kitty
+
+# Install tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+stow tmux
+
+# Install nvim
+stow nvim
+
+# Install .bashrc
+ensure_bashrc_d() {
+  BASHRC="$HOME/.bashrc"
+  BASHRC_D_DIR="$HOME/.bashrc.d"
+
+  # Define the sourcing block
+  BASHRC_D_BLOCK=$(
+    cat <<'EOF'
+# Source all scripts in ~/.bashrc.d
+if [ -d "$HOME/.bashrc.d" ]; then
+    for file in "$HOME/.bashrc.d"/*; do
+        [ -r "$file" ] && [ -f "$file" ] && . "$file"
+    done
+    unset file
+fi
+EOF
+  )
+
+  # Check if the block already exists in .bashrc
+  if ! grep -Fxq "# Source all scripts in ~/.bashrc.d" "$BASHRC"; then
+    echo "Appending .bashrc.d sourcing block to $BASHRC..."
+    echo -e "\n$BASHRC_D_BLOCK" >>"$BASHRC"
+    echo "Successfully added .bashrc.d sourcing block."
+  else
+    echo "Sourcing block already exists in $BASHRC. No changes made."
+  fi
+
+  # Ensure ~/.bashrc.d directory exists
+  if [ ! -d "$BASHRC_D_DIR" ]; then
+    echo "Creating ~/.bashrc.d directory..."
+    mkdir -p "$BASHRC_D_DIR"
+    chmod 700 "$BASHRC_D_DIR"
+    echo "Directory ~/.bashrc.d created."
+  else
+    echo "Directory ~/.bashrc.d already exists."
+  fi
+}
+
+# Call the function within your setup script
+echo "Ensuring .bashrc.d sourcing is set up..."
+ensure_bashrc_d
+stow bashrc
+
+echo "Restarting bash session"
+exec bash
