@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# To update neovim
+# sudo apt-get install ninja-build gettext cmake unzip curl build-essential
+#cd ./neovim
+#git pull
+#make distclean
+#make -j16  CMAKE_BUILD_TYPE=RelWithDebInfo
+#rm -rf /usr/local/share/nvim/runtime
+#make install
+
+# LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+# curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+#tar xf lazygit.tar.gz lazygit
+# sudo install lazygit /usr/local/bin
+
+# Start clean state
+rm -rf ~/.config/nvim
+rm -rf ~/.config/tmux
+rm -rf ~/.local/share/nvim
+rm -rf ~/.local/state/nvim
+rm -rf ~/.cache/nvim
+rm -rf ~/.tmux
+
+# Ubuntu
+sudo apt install git
+sudo apt install stow
+# For neovim
+sudo apt install ripgrep
+sudo apt install fd-find
+sudo apt install luarocks
+sudo apt install tree-sitter-cli
+ln -s $(which fdfind) ~/.local/bin/fd
+
+# Install fonts
+stow fonts
+fc-cache -fv
+
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
