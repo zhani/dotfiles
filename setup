@@ -49,16 +49,28 @@ sudo apt install -y golang-go
 # For Ruby-based Tools
 sudo apt install -y ruby
 
+# For Rust LSPs
+sudo apt install -y rust
+sudo apt install -y python3-rust
+
 # For C/C++ LSPs and formatters
+sudo apt install -y bear
 sudo apt install -y cmake
 sudo apt install -y clang
 sudo apt install -y clangd
 
+# For Kotlin LSPs
+sudo apt install -y openjdk-21-jdk
+sudo apt install -y openjdk-21-jre
+sudo apt install -y kotlin
+
 # For neovim
-sudo apt install -y fzf
-sudo apt install -y ripgrep
 sudo apt install -y fd-find
+sudo apt install -y fzf
 sudo apt install -y luarocks
+# sudo apt install -y magick # Been replaced by some newer app
+sudo apt install -y python3-pylatexenc
+sudo apt install -y ripgrep
 sudo apt install -y tree-sitter-cli
 ln -s $(which fdfind) ~/.local/bin/fd
 
