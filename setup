@@ -9,9 +9,17 @@
 #rm -rf /usr/local/share/nvim/runtime
 #make install
 
+# sudo update-alternatives --install /usr/bin/vi vi /usr/local/bin/nvim 60
+# sudo update-alternatives --config vi
+# sudo update-alternatives --install /usr/bin/vim vim /usr/local/bin/nvim 60
+# sudo update-alternatives --config vim
+# sudo update-alternatives --install /usr/bin/editor editor /usr/local/bin/nvim 60
+# sudo update-alternatives --config editor
+
+
 # LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
 # curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-#tar xf lazygit.tar.gz lazygit
+# tar xf lazygit.tar.gz lazygit
 # sudo install lazygit /usr/local/bin
 
 # Start clean state
@@ -50,8 +58,9 @@ sudo apt install -y golang-go
 sudo apt install -y ruby
 
 # For Rust LSPs
-sudo apt install -y rust
-sudo apt install -y python3-rust
+sudo apt install -y rustc
+sudo apt install -y ruff
+sudo apt install -y python3-ruff
 
 # For C/C++ LSPs and formatters
 sudo apt install -y bear
