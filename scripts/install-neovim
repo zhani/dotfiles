@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#
+# Install Neovim at a pinned tag by building from source on macOS and Ubuntu.
+# Building (rather than `brew install`/apt) guarantees the exact version.
+# Safe to run standalone or from ./setup.
+
+set -eu
+
+NVIM_TAG="v0.12.3"
+NVIM_SRC="$HOME/.local/src/neovim"
+
+case "$(uname -s)" in
+  Darwin) OS="macos" ;;
+  Linux)  OS="ubuntu" ;;
+  *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
+
+install_deps_macos() {
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  command -v brew >/dev/null 2>&1 || { echo "Homebrew is required" >&2; exit 1; }
+  echo "==> Installing neovim build dependencies (brew)"
+  brew install ninja cmake gettext curl git
+}
+
+install_deps_ubuntu() {
+  echo "==> Installing neovim build dependencies (apt)"
+  sudo apt-get update
+  sudo apt-get install -y ninja-build gettext cmake unzip curl build-essential git
+}
+
+job_count() {
+  if command -v nproc >/dev/null 2>&1; then nproc
+  elif command -v sysctl >/dev/null 2>&1; then sysctl -n hw.ncpu
+  else echo 4
+  fi
+}
+
+build_neovim() {
+  if [ -d "$NVIM_SRC/.git" ]; then
+    echo "==> Updating neovim source in $NVIM_SRC"
+    git -C "$NVIM_SRC" fetch --tags --force origin
+  else
+    echo "==> Cloning neovim into $NVIM_SRC"
+    mkdir -p "$(dirname "$NVIM_SRC")"
+    git clone https://github.com/neovim/neovim "$NVIM_SRC"
+  fi
+
+  echo "==> Checking out $NVIM_TAG"
+  git -C "$NVIM_SRC" checkout --force "tags/$NVIM_TAG"
+
+  echo "==> Building neovim $NVIM_TAG (RelWithDebInfo)"
+  make -C "$NVIM_SRC" distclean || true
+  make -C "$NVIM_SRC" -j"$(job_count)" CMAKE_BUILD_TYPE=RelWithDebInfo
+  sudo make -C "$NVIM_SRC" install
+
+  # Make nvim the default vi/vim/editor on Ubuntu (non-interactive).
+  if [ "$OS" = "ubuntu" ]; then
+    for tool in vi vim editor; do
+      sudo update-alternatives --install "/usr/bin/$tool" "$tool" /usr/local/bin/nvim 60
+      sudo update-alternatives --set "$tool" /usr/local/bin/nvim
+    done
+  fi
+}
+
+if [ "$OS" = "macos" ]; then
+  install_deps_macos
+else
+  install_deps_ubuntu
+fi
+build_neovim
+
+echo "==> Done: $(command -v nvim) $(nvim --version | head -1)"

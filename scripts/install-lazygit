@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# Install lazygit on macOS (Homebrew) or Ubuntu (latest GitHub release binary).
+# Safe to run standalone or from ./setup.
+
+set -eu
+
+case "$(uname -s)" in
+  Darwin) OS="macos" ;;
+  Linux)  OS="ubuntu" ;;
+  *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
+
+install_macos() {
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  command -v brew >/dev/null 2>&1 || { echo "Homebrew is required" >&2; exit 1; }
+  echo "==> Installing lazygit via Homebrew"
+  brew install lazygit
+}
+
+install_ubuntu() {
+  local lg_arch
+  case "$(uname -m)" in
+    x86_64)        lg_arch="Linux_x86_64" ;;
+    aarch64|arm64) lg_arch="Linux_arm64" ;;
+    armv*)         lg_arch="Linux_armv6" ;;
+    *) echo "Unsupported arch: $(uname -m)" >&2; exit 1 ;;
+  esac
+
+  local version
+  version=$(curl -fsSL "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" \
+    | grep -Po '"tag_name": "v\K[^"]*')
+  echo "==> Installing lazygit v${version} (${lg_arch})"
+
+  local tmp
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  curl -fsSL -o "$tmp/lazygit.tar.gz" \
+    "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${version}_${lg_arch}.tar.gz"
+  tar xf "$tmp/lazygit.tar.gz" -C "$tmp" lazygit
+  sudo install "$tmp/lazygit" /usr/local/bin
+}
+
+if [ "$OS" = "macos" ]; then
+  install_macos
+else
+  install_ubuntu
+fi
+
+echo "==> Done: $(command -v lazygit) $(lazygit --version 2>/dev/null | head -1)"

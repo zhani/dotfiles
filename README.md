@@ -19,6 +19,15 @@ cd ~/.dotfiles
 
 Restart your terminal afterwards (or run `exec bash -l`).
 
+### neovim & lazygit
+
+These are installed by their own cross-platform scripts (not part of `./setup`):
+
+```sh
+./scripts/install-neovim    # builds neovim v0.12.3 from source (macOS + Ubuntu)
+./scripts/install-lazygit   # brew on macOS; latest GitHub release binary on Ubuntu
+```
+
 ## macOS notes
 
 - The login shell is switched to Homebrew bash (`/opt/homebrew/bin/bash`, 5.x) via `chsh`,

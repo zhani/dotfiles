@@ -52,12 +52,15 @@ install_macos() {
 
   echo "==> Installing Homebrew formulae"
   brew install \
-    git stow neovim tmux \
+    git stow tmux \
     fzf ripgrep fd luarocks tree-sitter \
     python node go ruby rust ruff \
     llvm bear cmake \
-    openjdk@21 kotlin \
-    lazygit
+    openjdk@21 kotlin
+
+  # neovim and lazygit are installed by their own scripts (cross-platform):
+  #   ./scripts/install-neovim
+  #   ./scripts/install-lazygit
 
   echo "==> Installing Alacritty (cask)"
   brew install --cask alacritty || true
@@ -94,10 +97,9 @@ install_ubuntu() {
   # Debian ships fd as `fdfind`; expose it under the expected name.
   [ -e ~/.local/bin/fd ] || ln -s "$(which fdfind)" ~/.local/bin/fd
 
-  # neovim itself is built from source on Ubuntu (see header notes in git history);
-  # apt's package is usually too old for this config.
-  command -v nvim >/dev/null 2>&1 || \
-    echo "    NOTE: install a recent neovim manually (apt's is often too old)."
+  # neovim and lazygit are installed by their own scripts (cross-platform):
+  #   ./scripts/install-neovim   (builds neovim v0.12.3 from source)
+  #   ./scripts/install-lazygit
 
   sudo apt install -y alacritty
   sudo apt install -y tmux
