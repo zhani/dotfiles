@@ -1,0 +1,10 @@
+# macOS noise
+.DS_Store
+
+# The `fonts` stow package only manages ~/.local/share/fonts. Guard against the
+# stow tree-folding bug ever leaking app data (nvim/claude/etc.) into the repo.
+/fonts/.local/share/*
+!/fonts/.local/share/fonts
+
+# fontconfig-generated cache id, not config
+/fonts/.local/share/fonts/.uuid

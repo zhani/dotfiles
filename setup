@@ -1,118 +1,162 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Cross-platform dotfiles installer (macOS + Ubuntu).
+# Run from the repo root:  ./setup
+#
+# Detects the OS and installs the terminal stack (alacritty, tmux, neovim,
+# fonts, language tooling) via Homebrew on macOS or apt on Ubuntu, then stows
+# the configs. The stow/tmux/bashrc steps are shared across both platforms.
 
-# To update neovim
-# sudo apt-get install ninja-build gettext cmake unzip curl build-essential
-#cd ./neovim
-#git pull
-#make distclean
-#make -j16  CMAKE_BUILD_TYPE=RelWithDebInfo
-#rm -rf /usr/local/share/nvim/runtime
-#make install
+set -u
 
-# sudo update-alternatives --install /usr/bin/vi vi /usr/local/bin/nvim 60
-# sudo update-alternatives --config vi
-# sudo update-alternatives --install /usr/bin/vim vim /usr/local/bin/nvim 60
-# sudo update-alternatives --config vim
-# sudo update-alternatives --install /usr/bin/editor editor /usr/local/bin/nvim 60
-# sudo update-alternatives --config editor
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$DOTFILES_DIR" || exit 1
 
+case "$(uname -s)" in
+  Darwin) OS="macos" ;;
+  Linux)  OS="ubuntu" ;;
+  *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
+echo "==> Detected OS: $OS"
 
-# LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-# curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-# tar xf lazygit.tar.gz lazygit
-# sudo install lazygit /usr/local/bin
-
-# Start clean state
+# --------------------------------------------------------------------------
+# Clean state (paths are valid on both platforms)
+# --------------------------------------------------------------------------
 rm -rf ~/.local/bin
-rm -rf ~/.local/share/fonts
 rm -rf ~/.config/alacritty
 rm -rf ~/.config/nvim
 rm -rf ~/.config/tmux
-rm -rf ~/.local/share/nvim
 rm -rf ~/.local/state/nvim
 rm -rf ~/.cache/nvim
 rm -rf ~/.tmux
 rm -rf ~/.bashrc.d
 
-mkdir ~/.local/bin
+# Create real directories *before* stowing so stow never folds ~/.local/share
+# (or its parents) into a single symlink pointing back into this repo.
+mkdir -p ~/.local/bin ~/.local/share ~/.config
 
-# Ubuntu
-sudo apt install -y git
-sudo apt install -y stow
-sudo apt install -y curl
-sudo apt install -y unzip
-sudo apt install -y gnome-tweaks # To map Caps to Esc
+# --------------------------------------------------------------------------
+# Package installation
+# --------------------------------------------------------------------------
+install_macos() {
+  # Bootstrap Homebrew if missing.
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "==> Installing Homebrew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
 
-# For Python-based LSPs
-sudo apt install -y python3
-sudo apt install -y python3-pip
+  echo "==> Installing Homebrew formulae"
+  brew install \
+    git stow neovim tmux \
+    fzf ripgrep fd luarocks tree-sitter \
+    python node go ruby rust ruff \
+    llvm bear cmake \
+    openjdk@21 kotlin \
+    lazygit
 
-# For Javascript-based LSPs
-sudo apt install -y nodejs
-sudo apt install -y npm
+  echo "==> Installing Alacritty (cask)"
+  brew install --cask alacritty || true
 
-# For Go-based LSPs
-sudo apt install -y golang-go
+  # pylatexenc has no brew formula; install for nvim's LaTeX rendering if pip exists.
+  python3 -m pip install --user --quiet pylatexenc 2>/dev/null || \
+    echo "    (skipped pylatexenc; install manually if you need LaTeX preview)"
 
-# For Ruby-based Tools
-sudo apt install -y ruby
+  # NOTE: Caps Lock -> Esc is mapped manually via
+  # System Settings -> Keyboard -> Keyboard Shortcuts -> Modifier Keys.
+}
 
-# For Rust LSPs
-sudo apt install -y rustc
-sudo apt install -y ruff
-sudo apt install -y python3-ruff
+install_ubuntu() {
+  sudo apt update
+  sudo apt install -y git stow curl unzip
+  sudo apt install -y gnome-tweaks # To map Caps to Esc
 
-# For C/C++ LSPs and formatters
-sudo apt install -y bear
-sudo apt install -y cmake
-sudo apt install -y clang
-sudo apt install -y clangd
+  # For Python-based LSPs
+  sudo apt install -y python3 python3-pip
+  # For Javascript-based LSPs
+  sudo apt install -y nodejs npm
+  # For Go-based LSPs
+  sudo apt install -y golang-go
+  # For Ruby-based Tools
+  sudo apt install -y ruby
+  # For Rust LSPs
+  sudo apt install -y rustc ruff python3-ruff
+  # For C/C++ LSPs and formatters
+  sudo apt install -y bear cmake clang clangd
+  # For Kotlin LSPs
+  sudo apt install -y openjdk-21-jdk openjdk-21-jre kotlin
+  # For neovim
+  sudo apt install -y fd-find fzf luarocks python3-pylatexenc ripgrep tree-sitter-cli
+  # Debian ships fd as `fdfind`; expose it under the expected name.
+  [ -e ~/.local/bin/fd ] || ln -s "$(which fdfind)" ~/.local/bin/fd
 
-# For Kotlin LSPs
-sudo apt install -y openjdk-21-jdk
-sudo apt install -y openjdk-21-jre
-sudo apt install -y kotlin
+  # neovim itself is built from source on Ubuntu (see header notes in git history);
+  # apt's package is usually too old for this config.
+  command -v nvim >/dev/null 2>&1 || \
+    echo "    NOTE: install a recent neovim manually (apt's is often too old)."
 
-# For neovim
-sudo apt install -y fd-find
-sudo apt install -y fzf
-sudo apt install -y luarocks
-# sudo apt install -y magick # Been replaced by some newer app
-sudo apt install -y python3-pylatexenc
-sudo apt install -y ripgrep
-sudo apt install -y tree-sitter-cli
-ln -s $(which fdfind) ~/.local/bin/fd
+  sudo apt install -y alacritty
+  sudo apt install -y tmux
+}
 
-# Install fonts
-stow fonts
-fc-cache -fv
+# --------------------------------------------------------------------------
+# Fonts
+# --------------------------------------------------------------------------
+install_fonts_macos() {
+  # macOS Core Text (and thus Alacritty on mac) reads ~/Library/Fonts, not
+  # ~/.local/share/fonts. Symlink the vendored Nerd Fonts there.
+  echo "==> Linking fonts into ~/Library/Fonts"
+  mkdir -p ~/Library/Fonts
+  for f in "$DOTFILES_DIR"/fonts/.local/share/fonts/*.ttf; do
+    [ -e "$f" ] || continue
+    ln -sf "$f" ~/Library/Fonts/"$(basename "$f")"
+  done
+}
 
-# Install alacritty
-sudo apt install -y alacritty
-stow alacritty
+install_fonts_ubuntu() {
+  echo "==> Installing fonts via stow + fc-cache"
+  stow fonts
+  fc-cache -fv
+}
 
-# Install gnome-terminal
-#sudo apt install -y gnome-terminal
-#stow gnome-terminal
+# --------------------------------------------------------------------------
+# Shell: make brew bash (5.x) the login shell on macOS
+# --------------------------------------------------------------------------
+setup_shell_macos() {
+  local brew_bash="/opt/homebrew/bin/bash"
+  [ -x "$brew_bash" ] || brew_bash="$(brew --prefix 2>/dev/null)/bin/bash"
+  if [ -x "$brew_bash" ]; then
+    if ! grep -qx "$brew_bash" /etc/shells; then
+      echo "==> Adding $brew_bash to /etc/shells"
+      echo "$brew_bash" | sudo tee -a /etc/shells >/dev/null
+    fi
+    if [ "$SHELL" != "$brew_bash" ]; then
+      echo "==> Setting login shell to $brew_bash"
+      chsh -s "$brew_bash" || echo "    (chsh failed; run it manually)"
+    fi
+  fi
 
-# Install kitty
-#sudo apt install -y kitty
-#stow kitty
+  # Login shells on macOS read ~/.bash_profile, not ~/.bashrc. Make sure it
+  # sources ~/.bashrc so the ~/.bashrc.d setup below takes effect.
+  local bp="$HOME/.bash_profile"
+  if ! grep -qs 'bashrc' "$bp" 2>/dev/null; then
+    echo "==> Linking ~/.bash_profile -> ~/.bashrc"
+    printf '\n[ -r ~/.bashrc ] && . ~/.bashrc\n' >>"$bp"
+  fi
+}
 
-# Install tmux
-sudo apt install -y tmux
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-stow tmux
-
-# Install nvim
-stow nvim
-
-# Install .bashrc
+# --------------------------------------------------------------------------
+# Shared: source ~/.bashrc.d
+# --------------------------------------------------------------------------
 ensure_bashrc_d() {
   BASHRC="$HOME/.bashrc"
   BASHRC_D_DIR="$HOME/.bashrc.d"
+  touch "$BASHRC"
 
-  # Define the sourcing block
   BASHRC_D_BLOCK=$(
     cat <<'EOF'
 # Source all scripts in ~/.bashrc.d
@@ -125,30 +169,45 @@ fi
 EOF
   )
 
-  # Check if the block already exists in .bashrc
   if ! grep -Fxq "# Source all scripts in ~/.bashrc.d" "$BASHRC"; then
     echo "Appending .bashrc.d sourcing block to $BASHRC..."
     echo -e "\n$BASHRC_D_BLOCK" >>"$BASHRC"
-    echo "Successfully added .bashrc.d sourcing block."
   else
     echo "Sourcing block already exists in $BASHRC. No changes made."
   fi
 
-  # Ensure ~/.bashrc.d directory exists
   if [ ! -d "$BASHRC_D_DIR" ]; then
-    echo "Creating ~/.bashrc.d directory..."
     mkdir -p "$BASHRC_D_DIR"
     chmod 700 "$BASHRC_D_DIR"
-    echo "Directory ~/.bashrc.d created."
-  else
-    echo "Directory ~/.bashrc.d already exists."
   fi
 }
 
-# Call the function within your setup script
+# --------------------------------------------------------------------------
+# Run
+# --------------------------------------------------------------------------
+if [ "$OS" = "macos" ]; then
+  install_macos
+  install_fonts_macos
+else
+  install_ubuntu
+  install_fonts_ubuntu
+fi
+
+# Install tmux plugin manager
+rm -rf ~/.tmux/plugins/tpm
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+# Stow the shared config packages
+stow alacritty tmux nvim
+
+# Shell setup (macOS-specific)
+if [ "$OS" = "macos" ]; then
+  setup_shell_macos
+fi
+
+# Set up ~/.bashrc.d sourcing and stow the bash config
 echo "Ensuring .bashrc.d sourcing is set up..."
 ensure_bashrc_d
 stow bashrc
 
-echo "Restarting bash session"
-exec bash
+echo "==> Done. Restart your terminal (or run: exec bash -l)"

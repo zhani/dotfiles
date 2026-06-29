@@ -26,5 +26,5 @@ import = [
   "~/.config/alacritty/catppuccin-mocha.toml"
 ]
 
-[terminal.shell]
-program = "tmux"
+# No [terminal.shell] override: Alacritty launches the login shell, which `chsh`
+# points at brew bash (5.x) on macOS and the user's bash on Ubuntu.
