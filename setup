@@ -109,15 +109,11 @@ install_ubuntu() {
 # Fonts
 # --------------------------------------------------------------------------
 install_fonts_macos() {
-  # macOS Core Text (and thus Alacritty on mac) reads ~/Library/Fonts, not
-  # ~/.local/share/fonts. Copy the vendored Nerd Fonts there: Core Text does
-  # NOT register fonts that are symlinks, so real files are required.
-  echo "==> Copying fonts into ~/Library/Fonts"
-  mkdir -p ~/Library/Fonts
-  for f in "$DOTFILES_DIR"/fonts/.local/share/fonts/*.ttf; do
-    [ -e "$f" ] || continue
-    cp -f "$f" ~/Library/Fonts/"$(basename "$f")"
-  done
+  # Hand-placing fonts in ~/Library/Fonts doesn't reliably register with Core
+  # Text; the Homebrew cask installs and registers the Nerd Font correctly,
+  # which is all Alacritty needs on mac.
+  echo "==> Installing Ubuntu Mono Nerd Font (cask)"
+  brew install --cask font-ubuntu-mono-nerd-font
 }
 
 install_fonts_ubuntu() {

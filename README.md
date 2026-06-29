@@ -32,8 +32,9 @@ These are installed by their own cross-platform scripts (not part of `./setup`):
 
 - The login shell is switched to Homebrew bash (`/opt/homebrew/bin/bash`, 5.x) via `chsh`,
   so alacritty and tmux pick it up without any hardcoded paths.
-- Fonts are copied into `~/Library/Fonts` (macOS Core Text doesn't read
-  `~/.local/share/fonts`, and won't register symlinked fonts).
+- The terminal font is installed via the Homebrew cask
+  `font-ubuntu-mono-nerd-font` (hand-placing fonts in `~/Library/Fonts`
+  doesn't reliably register with Core Text).
 - **Caps Lock → Esc**: map it manually in System Settings → Keyboard →
   Keyboard Shortcuts → Modifier Keys → Caps Lock → Escape.
 - neovim, alacritty, etc. come from Homebrew.
