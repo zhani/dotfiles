@@ -110,12 +110,13 @@ install_ubuntu() {
 # --------------------------------------------------------------------------
 install_fonts_macos() {
   # macOS Core Text (and thus Alacritty on mac) reads ~/Library/Fonts, not
-  # ~/.local/share/fonts. Symlink the vendored Nerd Fonts there.
-  echo "==> Linking fonts into ~/Library/Fonts"
+  # ~/.local/share/fonts. Copy the vendored Nerd Fonts there: Core Text does
+  # NOT register fonts that are symlinks, so real files are required.
+  echo "==> Copying fonts into ~/Library/Fonts"
   mkdir -p ~/Library/Fonts
   for f in "$DOTFILES_DIR"/fonts/.local/share/fonts/*.ttf; do
     [ -e "$f" ] || continue
-    ln -sf "$f" ~/Library/Fonts/"$(basename "$f")"
+    cp -f "$f" ~/Library/Fonts/"$(basename "$f")"
   done
 }
 
