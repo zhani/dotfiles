@@ -57,11 +57,20 @@ build_neovim() {
   make -C "$NVIM_SRC" -j"$(job_count)" CMAKE_BUILD_TYPE=RelWithDebInfo
   sudo make -C "$NVIM_SRC" install
 
-  # Make nvim the default vi/vim/editor on Ubuntu (non-interactive).
+  # Make nvim the default vi/vim/editor.
+  local nvim_bin bindir
+  nvim_bin="$(command -v nvim || echo /usr/local/bin/nvim)"
+  bindir="$(dirname "$nvim_bin")"
   if [ "$OS" = "ubuntu" ]; then
     for tool in vi vim editor; do
-      sudo update-alternatives --install "/usr/bin/$tool" "$tool" /usr/local/bin/nvim 60
-      sudo update-alternatives --set "$tool" /usr/local/bin/nvim
+      sudo update-alternatives --install "/usr/bin/$tool" "$tool" "$nvim_bin" 60
+      sudo update-alternatives --set "$tool" "$nvim_bin"
+    done
+  else
+    # macOS has no update-alternatives; symlink next to nvim ($bindir is
+    # /usr/local/bin, which precedes /usr/bin in the default PATH).
+    for tool in vi vim editor; do
+      sudo ln -sf "$nvim_bin" "$bindir/$tool"
     done
   fi
 }
