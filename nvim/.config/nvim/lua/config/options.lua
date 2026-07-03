@@ -5,6 +5,12 @@
 -- Disable LazyVim auto format
 vim.g.autoformat = false
 
+-- Auto-reload files when changed externally
+vim.o.autoread = true
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
+  command = 'checktime',
+})
+
 -- SSH-only: use Neovim's built-in OSC52 provider and make y/yy go to system clipboard.
 if vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.SSH_CLIENT then
   local o = vim.opt
