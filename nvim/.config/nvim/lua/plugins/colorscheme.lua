@@ -14,6 +14,13 @@ return {
     config = function()
       require("catppuccin").setup({
         flavour = "mocha",
+        -- Darker background (mocha crust)
+        color_overrides = {
+          mocha = {
+            base = "#11111b",
+            mantle = "#11111b",
+          },
+        },
         integrations = {
           bufferline = true, -- keep bufferline integration on
         },
@@ -42,7 +49,9 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin",
+      -- "catppuccin-mocha" rather than "catppuccin": Neovim bundles its own
+      -- colors/catppuccin.vim which shadows the plugin and ignores overrides
+      colorscheme = "catppuccin-mocha",
     },
   },
 }
