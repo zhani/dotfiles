@@ -5,12 +5,12 @@ size = 16
 [font.normal]
 family = "UbuntuMono Nerd Font"
 
-#[window]
-#decorations = "none"
+[window]
+decorations = "none"
 
 [window.padding]
-x = 7
-y = 0
+x = 8
+y = 8
 
 [general]
 # themes from https://github.com/alacritty/alacritty-theme
@@ -25,6 +25,10 @@ import = [
   # "~/.config/alacritty/catppuccin-macchiato.toml"
   "~/.config/alacritty/catppuccin-mocha.toml"
 ]
+
+# Darker background (mocha crust) on top of the imported theme
+[colors.primary]
+background = "#11111b"
 
 # No [terminal.shell] override: Alacritty launches the login shell, which `chsh`
 # points at brew bash (5.x) on macOS and the user's bash on Ubuntu.
